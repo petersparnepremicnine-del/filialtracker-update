@@ -70,8 +70,12 @@ def norm_town(t):
 
 
 def int0(s):
+    """'53.199' (German thousands) or '53199' or '232839.8' (raw number from xlsx) -> int; '-' -> 0."""
+    t = str(s).strip()
     try:
-        return int(str(s).replace(".", "").strip())
+        if re.fullmatch(r"\d{1,3}(\.\d{3})+", t):
+            return int(t.replace(".", ""))
+        return int(round(float(t.replace(",", "."))))
     except ValueError:
         return 0
 
@@ -170,7 +174,9 @@ def main():
             continue
         else:
             short = "Genossenschaften" if name.startswith("Landwirtschaftliche") else name
-            chains.append({"name": short, "own": int0(r[4]), "fr": int0(r[5])})
+            chains.append({"name": short, "own": int0(r[4]), "fr": int0(r[5]),
+                           "area": int0(r[12]) if len(r) > 12 else 0, "area_n": int0(r[13]) if len(r) > 13 else 0,
+                           "closed_total": int0(r[8]) if len(r) > 8 else 0})
             if len(r) > 1 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r[1] or ""):
                 last_checked[short] = r[1]
     chains.sort(key=lambda c: -(c["own"] + c["fr"]))

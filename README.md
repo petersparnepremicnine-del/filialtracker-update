@@ -7,6 +7,7 @@ Wird nach jedem Monatslauf automatisch neu erstellt.
 
 - Bild (Bildschirm, eine Seite): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/monatsupdate.png
 - PDF (Druck, 2 Seiten A4 quer): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/monatsupdate.pdf
+- PowerPoint (Kurzpräsentation, gleiche Daten): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/monatsupdate.pptx
 - Arbeitsmappe (alle Tabs, Stand des letzten Laufs): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/daten/Filialtracker_Slowenien.xlsx
   (Branch `daten`, enthält immer nur die neueste Version)
 
@@ -23,6 +24,7 @@ Frühere Ausgaben: Ordner `archiv/` (`JJJJ-MM.png` / `.pdf`).
 - `update.sh <arbeitsmappe.xlsx> <datum>` – baut alles aus der Arbeitsmappe des Laufs (gleiche Tabs wie die Google-Tabelle).
 - `make_data.py` – liest die Tabs und erstellt die Inhalte (Zeitraum = seit der letzten Ausgabe, `state.json`).
 - `build_infographic.py`, `render.js` – Layout (Grün/Rot/Weiß) und Ausgabe als PNG/PDF.
+- `build_pptx.js`, `render_map.js` – dieselben Inhalte als PowerPoint (9 Folien, native Diagramme und Tabellen).
 - `towns_si.json` – Ortskoordinaten aus GeoNames (CC BY 4.0); `towns_extra.json` – ergänzte Orte mit Quelle in `towns_extra_sources.md`.
 - `svn_border.json` – Staatsgrenze aus Natural Earth (gemeinfrei).
 
