@@ -7,6 +7,8 @@ Wird nach jedem Monatslauf automatisch neu erstellt.
 
 - Bild (Bildschirm, eine Seite): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/monatsupdate.png
 - PDF (Druck, 2 Seiten A4 quer): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/monatsupdate.pdf
+- Arbeitsmappe (alle Tabs, Stand des letzten Laufs): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/daten/Filialtracker_Slowenien.xlsx
+  (Branch `daten`, enthält immer nur die neueste Version)
 
 Frühere Ausgaben: Ordner `archiv/` (`JJJJ-MM.png` / `.pdf`).
 
@@ -24,4 +26,4 @@ Frühere Ausgaben: Ordner `archiv/` (`JJJJ-MM.png` / `.pdf`).
 - `towns_si.json` – Ortskoordinaten aus GeoNames (CC BY 4.0); `towns_extra.json` – ergänzte Orte mit Quelle in `towns_extra_sources.md`.
 - `svn_border.json` – Staatsgrenze aus Natural Earth (gemeinfrei).
 
-Dieses Repository ist öffentlich. Es enthält nur die Infografik und die Werkzeuge, keine Rohdaten des Trackers.
+Dieses Repository ist öffentlich. Der Branch `main` enthält die Infografik und die Werkzeuge; die Arbeitsmappe liegt (mit Zustimmung des Nutzers, 3.11.2026) nur auf dem Branch `daten`, der bei jedem Lauf ersetzt wird.
