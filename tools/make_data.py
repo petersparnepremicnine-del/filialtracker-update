@@ -261,8 +261,8 @@ def main():
         if r.get("Art") and r["Art"] != "Neueröffnung":
             what = f"{r['Art']}: {what}"
         what = what.split(";")[0].strip()
-        if len(what) > 78:
-            what = what[:76].rsplit(" ", 1)[0] + " …"
+        if len(what) > 68:
+            what = what[:66].rsplit(" ", 1)[0] + " …"
         pipe.append({"id": r.get("ID", ""), "chain": r.get("Kette", ""), "town": r.get("Ort", ""), "what": what,
                      "when": r.get("Erwartete Eröffnung", "") or "unbekannt", "grade": g, "flag": flag})
     gorder = {"Bestätigt": 0, "Berichtet": 1, "Gerücht": 2}
@@ -289,31 +289,60 @@ def main():
         f = r.get("Filiale", "").split(",")[0].strip()
         return f if r.get("Kette", "").lower()[:4] in f.lower() else f"{r.get('Kette')} {f}"
 
+    def short(t, n=42):
+        t = (t or "").strip()
+        return t if len(t) <= n else t[:n - 2].rsplit(" ", 1)[0] + " …"
+
+    def items(rows, name_f, n=10):
+        """List entries for a card: town (bold) + store name, at most n, duplicates removed."""
+        out, seen = [], set()
+        for r in rows:
+            it = {"town": r.get("_town", ""), "name": short(name_f(r))}
+            k = (it["town"], it["name"])
+            if k in seen:
+                continue
+            seen.add(k)
+            out.append(it)
+        more = max(len(out) - n, 0)
+        return out[:n], more
+
+    def card(typ, head, rows, name_f, note=""):
+        its, more = items(rows, name_f)
+        if more:
+            note = (f"+ {more} weitere im Tab „Änderungen“. " + note).strip()
+        return {"type": typ, "head": head, "items": its, "note": note}
+
+    one_chain = lambda rows: len({r.get("Kette", "") for r in rows}) == 1
     cards = []
     if ev["open"]:
-        cards.append({"type": "open", "head": f"{len(ev['open'])} Neueröffnung{'en' if len(ev['open']) > 1 else ''}",
-                      "body": lst(ev["open"], lambda r: f"{store_short(r)} ({r['_town']})")})
+        cards.append(card("open", f"{len(ev['open'])} Neueröffnung{'en' if len(ev['open']) > 1 else ''}",
+                          ev["open"], store_short))
     if ev["close"]:
-        reason = " Erfasst durch die Regel vom 26.10.2026 (an allen Tagen geschlossen)." \
+        reason = "Erfasst durch die Regel vom 26.10.2026: noch gelistet, aber an allen Tagen geschlossen." \
             if all("Regeländerung" in r.get("Änderung", "") for r in ev["close"]) else ""
-        cards.append({"type": "close", "head": f"{len(ev['close'])} Filiale{'n' if len(ev['close']) > 1 else ''} geschlossen ({chain_note(ev['close'])})",
-                      "body": lst(ev["close"], lambda r: f"{r.get('Filiale')} ({r['_town']})") + "." + reason})
+        nf = (lambda r: r.get("Filiale", "")) if one_chain(ev["close"]) else store_short
+        cards.append(card("close", f"{len(ev['close'])} Filiale{'n' if len(ev['close']) > 1 else ''} geschlossen ({chain_note(ev['close'])})",
+                          ev["close"], nf, reason))
     if ev["reopen"]:
-        cards.append({"type": "reopen", "head": f"{len(ev['reopen'])} wiedereröffnet",
-                      "body": lst(ev["reopen"], lambda r: f"{store_short(r)} ({r['_town']})")})
+        cards.append(card("reopen", f"{len(ev['reopen'])} wiedereröffnet", ev["reopen"], store_short))
     if ev["switch"]:
         def sw(r):
             m = re.search(r"Kettenwechsel\s+(\S+\s*→\s*\S+)", r.get("Änderung", ""))
             m2 = re.search(r"gehört zu (\S+)", r.get("Änderung", ""))
-            return f"{r['_town']}: {m[1] if m else ('jetzt ' + m2[1] if m2 else r.get('Kette'))}"
-        cards.append({"type": "switch", "head": f"{len(ev['switch'])} Kettenwechsel",
-                      "body": lst(ev["switch"], sw) + ". Gezählt nur bei der Kette, die die Filiale jetzt betreibt."})
+            if m:
+                return m[1]
+            if m2:
+                others = [c.strip() for c in r.get("Kette", "").split("/") if c.strip() and c.strip() != m2[1]]
+                return f"{others[0]} → {m2[1]}" if others else "jetzt " + m2[1]
+            return r.get("Kette", "")
+        cards.append(card("switch", f"{len(ev['switch'])} Kettenwechsel", ev["switch"], sw,
+                          "Gezählt nur bei der Kette, die die Filiale jetzt betreibt."))
     if ev["seasonal"]:
-        cards.append({"type": "seasonal", "head": f"{len(ev['seasonal'])} vermutlich geschlossen",
-                      "body": lst(ev["seasonal"], lambda r: f"{store_short(r)} ({r['_town']})") + " – weiter gezählt."})
+        cards.append(card("seasonal", f"{len(ev['seasonal'])} vermutlich geschlossen", ev["seasonal"], store_short,
+                          "Saisonal geschlossen – weiter gezählt."))
     if ev["expected"]:
-        cards.append({"type": "pipe", "head": f"{len(ev['expected'])} neu gelistet, noch ohne Öffnungszeiten",
-                      "body": lst(ev["expected"], lambda r: f"{store_short(r)} ({r['_town']})") + " – erwartete Eröffnung, nicht gezählt."})
+        cards.append(card("pipe", f"{len(ev['expected'])} neu gelistet, noch ohne Öffnungszeiten", ev["expected"], store_short,
+                          "Erwartete Eröffnung – nicht gezählt."))
     if cand_new:
         cards.append({"type": "neutral", "tag": "Wettbewerber", "head": f"Neue Wettbewerber-Kandidaten: {len(cand_new)}",
                       "body": lst(cand_new, lambda k: k.get("Kandidat")) + " – Entscheidung im Tab „Kandidaten“."})
@@ -327,8 +356,8 @@ def main():
                           .rstrip(".") + "." for r in ev["tracker"]))[:330]})
     if not cards:
         cards.append({"type": "neutral", "head": "Keine Änderungen", "body": "Im Zeitraum keine Eröffnungen, Schließungen oder Kettenwechsel."})
-    dropped = cards[5:]
-    cards = cards[:5]
+    dropped = cards[4:]
+    cards = cards[:4]
 
     # ------------------------------------------------------------ map points
     towns = json.load(open(os.path.join(HERE, "towns_si.json"), encoding="utf-8"))

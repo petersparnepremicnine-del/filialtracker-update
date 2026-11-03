@@ -171,7 +171,16 @@ for n in data["news"]:
     t = n["type"]
     ic = icon_svg(t, 22) if t != "neutral" else '<svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="7.5" fill="none" stroke="#52514e" stroke-width="2"/><path d="M11 7.5v4.5M11 14.6v.1" stroke="#52514e" stroke-width="2" stroke-linecap="round"/></svg>'
     news += (f'<div class="card" style="--acc:{C[t]}"><div class="card-h">{ic}<div><div class="tag">{escape(n.get("tag") or TYPE_LABEL[t])}</div>'
-             f'<div class="ch">{escape(n["head"])}</div></div></div><p>{escape(n["body"])}</p></div>')
+             f'<div class="ch">{escape(n["head"])}</div></div></div>')
+    if n.get("items"):
+        cols = " two" if len(n["items"]) > 1 else ""
+        news += f'<ul class="items{cols}">' + "".join(
+            f'<li><b>{escape(it["town"])}</b><span>{escape(it["name"])}</span></li>' for it in n["items"]) + "</ul>"
+        if n.get("note"):
+            news += f'<div class="cnote">{escape(n["note"])}</div>'
+    else:
+        news += f'<p>{escape(n.get("body", ""))}</p>'
+    news += "</div>"
 
 # ---------- Gantt ----------
 g = data["gantt"]
@@ -250,29 +259,41 @@ for p in data["pipeline"]:
              f'<div class="pp-b">{escape(p["what"])}</div></div><div class="pp-r">{escape(p["when"])}</div></div>')
 
 # ---------- chain bars ----------
-BW, BLW, BRH = 640, 150, 25
+BW, BLW, BRH, BTOP = 598, 140, 22, 24
+NUMW = 66                      # width of each number column (Gesamt, Eigene, Franchise)
+NX = [BW - 2 * NUMW - 4, BW - NUMW - 4, BW - 4]   # right edges of the number columns
 mx = max(c["own"] + c["fr"] for c in data["chains"])
-bplot = BW - BLW - 130
+bplot = NX[0] - NUMW - BLW - 12
 bars = ""
+for x, lab in zip(NX, ("Gesamt", "Eigene", "Franchise")):
+    bars += f'<text x="{x}" y="{BTOP-10}" text-anchor="end" class="bhead">{lab}</text>'
 for i, c in enumerate(data["chains"]):
-    y = i * BRH + 6
+    y = BTOP + i * BRH
+    if i % 2 == 0:
+        bars += f'<rect x="0" y="{y}" width="{BW}" height="{BRH}" fill="#f6f6f3"/>'
     wo = c["own"] / mx * bplot
     wf = c["fr"] / mx * bplot
-    bars += f'<text x="{BLW-12}" y="{y+BRH/2+3}" text-anchor="end" class="blbl">{escape(c["name"])}</text>'
+    bars += f'<text x="{BLW-12}" y="{y+BRH/2+5}" text-anchor="end" class="blbl">{escape(c["name"])}</text>'
     # rounded data-end only at the outer end; 2px surface gap between segments
     if c["fr"]:
-        bars += f'<rect x="{BLW}" y="{y+5}" width="{max(wo-2,1)}" height="{BRH-14}" fill="#008349"/>'
-        bars += (f'<path d="M{BLW+wo},{y+5}h{max(wf-4,0)}a4,4 0 0 1 4,4v{BRH-22}a4,4 0 0 1 -4,4h-{max(wf-4,0)}z" '
+        bars += f'<rect x="{BLW}" y="{y+6}" width="{max(wo-2,1)}" height="{BRH-12}" fill="#008349"/>'
+        bars += (f'<path d="M{BLW+wo},{y+6}h{max(wf-4,0)}a4,4 0 0 1 4,4v{BRH-20}a4,4 0 0 1 -4,4h-{max(wf-4,0)}z" '
                  f'fill="#8ccaa6"/>')
     else:
-        bars += (f'<path d="M{BLW},{y+5}h{max(wo-4,0)}a4,4 0 0 1 4,4v{BRH-22}a4,4 0 0 1 -4,4h-{max(wo-4,0)}z" '
+        bars += (f'<path d="M{BLW},{y+6}h{max(wo-4,0)}a4,4 0 0 1 4,4v{BRH-20}a4,4 0 0 1 -4,4h-{max(wo-4,0)}z" '
                  f'fill="#008349"/>')
     tot = c["own"] + c["fr"]
-    lab = f'{tot}' + (f'  ({c["fr"]} Fr.)' if c["fr"] else "")
-    bars += f'<text x="{BLW+wo+wf+8}" y="{y+BRH/2+3}" class="bval">{lab}</text>'
-BH = len(data["chains"]) * BRH + 12
-bars_svg = (f'<svg viewBox="0 0 {BW} {BH}" width="{BW}" height="{BH}" role="img" aria-label="Gezählte Filialen je Kette">'
-            f'<line x1="{BLW}" y1="0" x2="{BLW}" y2="{BH-4}" stroke="#c9c8c2"/>{bars}</svg>')
+    for x, v, cls in zip(NX, (tot, c["own"], c["fr"]), ("btot", "bval", "bval")):
+        bars += f'<text x="{x}" y="{y+BRH/2+5}" text-anchor="end" class="{cls}">{v if v else "–"}</text>'
+tot_all = [sum(c["own"] + c["fr"] for c in data["chains"]), sum(c["own"] for c in data["chains"]), sum(c["fr"] for c in data["chains"])]
+y = BTOP + len(data["chains"]) * BRH
+bars += f'<line x1="0" y1="{y+2}" x2="{BW}" y2="{y+2}" stroke="#c9c8c2"/>'
+bars += f'<text x="{BLW-12}" y="{y+20}" text-anchor="end" class="blbl">Gesamt</text>'
+for x, v in zip(NX, tot_all):
+    bars += f'<text x="{x}" y="{y+20}" text-anchor="end" class="btot">{f"{v:,}".replace(",", ".")}</text>'
+BH = y + 30
+bars_svg = (f'<svg viewBox="0 0 {BW} {BH}" width="{BW}" height="{BH}" role="img" aria-label="Filialen pro Kette">'
+            f'<line x1="{BLW}" y1="{BTOP}" x2="{BLW}" y2="{BTOP + len(data["chains"]) * BRH}" stroke="#c9c8c2"/>{bars}</svg>')
 
 if data.get("pipeline_more"):
     pipe += f'<div class="gfoot">+ {data["pipeline_more"]} weitere im Tab „Geplante Eröffnungen“</div>'
@@ -309,6 +330,12 @@ h2{{color:#006b3b;font-family:'Inter Display',Inter,sans-serif;font-size:24px;fo
 .card-h svg{{flex:none;margin-top:2px}}
 .tag{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#52514e}}
 .ch{{font-size:17px;font-weight:700;margin-top:1px}}
+.items{{list-style:none;margin:6px 0 0 32px;display:grid;grid-template-columns:1fr;gap:4px 14px}}
+.items.two{{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.items li{{min-width:0;font-size:13.5px;line-height:1.25;color:#33322f;padding-left:10px;border-left:3px solid var(--acc)}}
+.items li b{{display:block;font-size:13.5px;color:#0b0b0b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.items li span{{display:block;font-size:12.5px;color:#52514e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.cnote{{font-size:12.5px;color:#52514e;margin:6px 0 0 32px;font-style:italic}}
 .card p{{font-size:13.5px;line-height:1.35;color:#33322f;margin-top:4px;padding-left:32px}}
 .axis{{font-size:13px;fill:#52514e;font-weight:600}}
 .glbl{{font-size:14.5px;font-weight:600;fill:#0b0b0b}}
@@ -329,7 +356,9 @@ h2{{color:#006b3b;font-family:'Inter Display',Inter,sans-serif;font-size:24px;fo
 .pp-b{{font-size:14px;color:#33322f}}
 .pp-r{{text-align:right;font-weight:600;font-size:14.5px}}
 .blbl{{font-size:14px;font-weight:600;fill:#0b0b0b}}
-.bval{{font-size:13.5px;fill:#33322f;font-weight:600}}
+.bhead{{font-size:12.5px;font-weight:700;fill:#52514e}}
+.btot{{font-size:14px;font-weight:700;fill:#0b0b0b}}
+.bval{{font-size:14px;fill:#33322f;font-weight:500}}
 .foot{{display:grid;grid-template-columns:1fr 1fr;gap:28px;border-top:1px solid #e4e3df;padding-top:14px}}
 .foot h3{{font-size:16px;margin-bottom:6px}}
 .foot li{{font-size:14px;color:#33322f;margin-left:18px;margin-bottom:3px}}
@@ -361,7 +390,7 @@ h2{{color:#006b3b;font-family:'Inter Display',Inter,sans-serif;font-size:24px;fo
 {gantt_svg}<div class="gfoot">{escape(g.get('footnote') or '')}</div></div>
 <div class="row r3">
 <div class="panel"><h2>Geplante Eröffnungen und Gerüchte</h2><div class="h2s">Nicht gezählt – gezählt wird erst, wenn die Kette die Filiale mit Öffnungszeiten listet</div>{pipe}</div>
-<div class="panel"><h2>Gezählte Filialen je Kette</h2>
+<div class="panel"><h2>Filialen pro Kette</h2><div class="h2s">Gezählte Lebensmittelgeschäfte, eigene Filialen und Franchise getrennt</div>
 <div class="glegend"><span><span class="sw" style="background:#008349"></span>eigene Filialen</span><span><span class="sw" style="background:#8ccaa6"></span>Franchise (Fr.)</span></div>{bars_svg}</div>
 </div>
 <div class="foot"><div><h3>Offene Punkte</h3><ul>{open_items}</ul></div>
