@@ -254,11 +254,16 @@ def main():
         grades[g] = grades.get(g, 0) + 1
         first, _ = pdate(r.get("Erstmals berichtet"))
         last, _ = pdate(r.get("Letzter Beleg"))
-        flag = "neu" if in_period(first) else ("aktualisiert" if in_period(last) else "")
+        known = (cur or {}).get("pipeline_ids_at_start")
+        is_new = in_period(first) or (known is not None and r.get("ID") not in known)
+        flag = "neu" if is_new else ("aktualisiert" if in_period(last) else "")
         what = r.get("Standort", "")
         if r.get("Art") and r["Art"] != "Neueröffnung":
             what = f"{r['Art']}: {what}"
-        pipe.append({"chain": r.get("Kette", ""), "town": r.get("Ort", ""), "what": what[:110],
+        what = what.split(";")[0].strip()
+        if len(what) > 78:
+            what = what[:76].rsplit(" ", 1)[0] + " …"
+        pipe.append({"id": r.get("ID", ""), "chain": r.get("Kette", ""), "town": r.get("Ort", ""), "what": what,
                      "when": r.get("Erwartete Eröffnung", "") or "unbekannt", "grade": g, "flag": flag})
     gorder = {"Bestätigt": 0, "Berichtet": 1, "Gerücht": 2}
     pipe.sort(key=lambda p: (p["flag"] == "", gorder.get(p["grade"], 3)))
@@ -421,7 +426,9 @@ def main():
 
     if final:
         rec = {"edition": ed_key, "period_start": p_start.isoformat(), "period_end": p_end.isoformat(),
-               "total": total, "prev_total": prev_total}
+               "total": total, "prev_total": prev_total,
+               # pipeline entries known when the edition was first built (later additions in the same month = "neu")
+               "pipeline_ids_at_start": (cur or {}).get("pipeline_ids_at_start") or sorted(p["id"] for p in pipe)}
         state["editions"] = [e for e in eds if e["edition"] != ed_key] + [rec]
         state["editions"].sort(key=lambda e: e["edition"])
         json.dump(state, open(state_p, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

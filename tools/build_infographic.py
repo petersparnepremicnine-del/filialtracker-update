@@ -318,7 +318,7 @@ h2{{color:#006b3b;font-family:'Inter Display',Inter,sans-serif;font-size:24px;fo
 .gfoot{{font-size:13.5px;color:#52514e;margin-top:10px}}
 .glegend{{display:flex;gap:20px;font-size:13.5px;color:#52514e;margin:0 0 6px}}
 .sw{{display:inline-block;width:26px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}}
-.pp{{display:grid;grid-template-columns:104px 1fr 132px;gap:14px;align-items:center;padding:7px 4px;border-bottom:1px solid #eeede9}}
+.pp{{display:grid;grid-template-columns:104px 1fr 175px;gap:14px;align-items:center;padding:4px 4px;border-bottom:1px solid #eeede9}}
 .pp:last-child{{border-bottom:none}}
 .grade{{display:inline-block;font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px;border:2px solid #2a78d6}}
 .g-conf{{background:#2a78d6;color:#fff}}
@@ -342,7 +342,7 @@ h2{{color:#006b3b;font-family:'Inter Display',Inter,sans-serif;font-size:24px;fo
  .gscope,.tag{{font-size:13.5px}}
  .card p,.pp-b,.foot li,.foot p,.h2s,.kpi-sub,.legend,.glegend,.gfoot{{font-size:15px}}
  .axis,.bval,.maplbl,.blbl{{font-size:15px}}
- .pp{{padding:3px 4px}} .pp-b{{font-size:14px}} .row{{margin-bottom:12px}} .wrap{{padding-bottom:0}}
+ .pp{{padding:2px 4px}} .pp-b{{font-size:14px}} .row{{margin-bottom:12px}} .wrap{{padding-bottom:0}}
  .p2hdr{{margin-bottom:10px}} .foot{{padding-top:8px}} .gfoot{{margin-top:4px}}
  div.panel[style]{{margin-bottom:12px!important}}
 }}
