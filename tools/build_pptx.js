@@ -260,8 +260,11 @@ pres.addSection({ title: "Markt" });
 }
 
 // ---------------------------------------------------------------- 8 Verkaufsfläche
-{
-  const s = slideBase("Durchschnittliche Verkaufsfläche je Filiale", "m² je Filiale mit bekannter Fläche – Näherungswerte aus der alten Standortliste (Konkurrenz)", "Markt");
+// Only shown once the sales area is known for every counted store of every chain (user, 3.11.2026):
+// with gaps (e.g. no Spar areas) the comparison would mislead.
+const areaComplete = D.chains.every((c) => c.own + c.fr === 0 || c.area_n >= c.own + c.fr);
+if (areaComplete) {
+  const s = slideBase("Durchschnittliche Verkaufsfläche pro Filiale", "m² je Filiale mit bekannter Fläche – Näherungswerte aus der alten Standortliste (Konkurrenz)", "Markt");
   const withA = D.chains.filter((c) => c.area_n > 0).map((c) => ({ ...c, avg: Math.round(c.area / c.area_n) }))
     .sort((a, b) => a.avg - b.avg);
   s.addChart(pres.charts.BAR, [{ name: "Ø Verkaufsfläche (m²)", labels: withA.map((c) => c.name), values: withA.map((c) => c.avg) }], {
@@ -288,6 +291,8 @@ pres.addSection({ title: "Markt" });
   s.addText("Datenlage", { x: x + 0.3, y: 3.85, w: w - 0.6, h: 0.35, fontSize: 14, bold: true, color: HEX.muted, margin: 0, isTextBox: true });
   s.addText(lines, { x: x + 0.3, y: 4.25, w: w - 0.6, h: 2.3, fontSize: 13, color: HEX.text, valign: "top", margin: 0, paraSpaceAfter: 6, isTextBox: true });
   s.addNotes("Durchschnitt = Summe der bekannten Verkaufsflächen / Anzahl Filialen mit Fläche. Nur Verkaufsfläche, keine Gesamt- oder Mietfläche.");
+} else {
+  console.log("Folie Verkaufsfläche ausgelassen: Flächen nicht für alle Filialen bekannt");
 }
 
 // ---------------------------------------------------------------- 9 Offene Punkte
