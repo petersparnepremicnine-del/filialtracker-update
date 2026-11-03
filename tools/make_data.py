@@ -32,6 +32,10 @@ def dmy(d, year=False):
     return f"{d.day}.{d.month}.{d.year}" if year else f"{d.day}.{d.month}."
 
 
+MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September",
+             "Oktober", "November", "Dezember"]
+
+
 def pdate(s):
     """ISO date, or YYYY-MM / YYYY -> (date, precision)."""
     s = (s or "").strip()
@@ -216,6 +220,8 @@ def main():
             start = s if sp == "d" else p_start
             if e and ep == "d":
                 end, note, open_end = e - timedelta(days=1), f"Wiedereröffnung {dmy(e)}", False
+            elif e and ep == "m":  # only the month is known: bar to the month's start, open end
+                end, note, open_end = max(e, run), f"Wiedereröffnung {MONTHS_DE[e.month - 1][:3]}. {e.year}".replace("Mai.", "Mai"), True
             else:
                 end, note, open_end = max(start, run) + timedelta(days=14), "kein Wiedereröffnungsdatum", True
             row = dict(status="Laufend", start=start, end=end, note=note, open_end=open_end,

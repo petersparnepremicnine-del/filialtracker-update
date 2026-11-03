@@ -262,7 +262,10 @@ pres.addSection({ title: "Markt" });
 // ---------------------------------------------------------------- 8 Verkaufsfläche
 // Only shown once the sales area is known for every counted store of every chain (user, 3.11.2026):
 // with gaps (e.g. no Spar areas) the comparison would mislead.
-const areaComplete = D.chains.every((c) => c.own + c.fr === 0 || c.area_n >= c.own + c.fr);
+// 95 % Abdeckung je Kette gilt als vollständig; die Genossenschaftsgruppe ist keine Kette und zählt nicht mit.
+const AREA_MIN_SHARE = 0.95;
+const areaComplete = D.chains.filter((c) => !/genossenschaft/i.test(c.name))
+  .every((c) => c.own + c.fr === 0 || c.area_n >= AREA_MIN_SHARE * (c.own + c.fr));
 if (areaComplete) {
   const s = slideBase("Durchschnittliche Verkaufsfläche pro Filiale", "m² je Filiale mit bekannter Fläche – Näherungswerte aus der alten Standortliste (Konkurrenz)", "Markt");
   const withA = D.chains.filter((c) => c.area_n > 0).map((c) => ({ ...c, avg: Math.round(c.area / c.area_n) }))
@@ -292,7 +295,7 @@ if (areaComplete) {
   s.addText(lines, { x: x + 0.3, y: 4.25, w: w - 0.6, h: 2.3, fontSize: 13, color: HEX.text, valign: "top", margin: 0, paraSpaceAfter: 6, isTextBox: true });
   s.addNotes("Durchschnitt = Summe der bekannten Verkaufsflächen / Anzahl Filialen mit Fläche. Nur Verkaufsfläche, keine Gesamt- oder Mietfläche.");
 } else {
-  console.log("Folie Verkaufsfläche ausgelassen: Flächen nicht für alle Filialen bekannt");
+  console.log("Folie Verkaufsfläche ausgelassen: Fläche bei mindestens einer Kette für weniger als 95 % der Filialen bekannt");
 }
 
 // ---------------------------------------------------------------- 9 Offene Punkte
