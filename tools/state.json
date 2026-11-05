@@ -6,6 +6,21 @@
    "period_end": "2026-11-03",
    "total": 1143,
    "prev_total": null,
+   "chains": {
+    "Mercator": 501,
+    "Spar": 163,
+    "Tuš": 135,
+    "Hofer": 93,
+    "Lidl": 69,
+    "Eurospin": 60,
+    "Jager": 43,
+    "Mlinotest": 35,
+    "Fama": 23,
+    "Genossenschaften": 9,
+    "Kea": 7,
+    "Stu.Market": 3,
+    "E.Leclerc": 2
+   },
    "pipeline_ids_at_start": [
     "PIP-001",
     "PIP-002",

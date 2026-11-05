@@ -260,12 +260,13 @@ for p in data["pipeline"]:
 
 # ---------- chain bars ----------
 BW, BLW, BRH, BTOP = 598, 140, 22, 24
-NUMW = 66                      # width of each number column (Gesamt, Eigene, Franchise)
-NX = [BW - 2 * NUMW - 4, BW - NUMW - 4, BW - 4]   # right edges of the number columns
+SHOWD = any(c.get("delta") is not None for c in data["chains"])   # change vs comparison base (month/quarter/year)
+NUMW = 58 if SHOWD else 66     # width of each number column (Gesamt, Eigene, Franchise[, Änderung])
+NX = [BW - (3 if SHOWD else 2) * NUMW - 4 + k * NUMW for k in range(4 if SHOWD else 3)]   # right edges
 mx = max(c["own"] + c["fr"] for c in data["chains"])
 bplot = NX[0] - NUMW - BLW - 12
 bars = ""
-for x, lab in zip(NX, ("Gesamt", "Eigene", "Franchise")):
+for x, lab in zip(NX, ("Gesamt", "Eigene", "Fr.", "±") if SHOWD else ("Gesamt", "Eigene", "Franchise")):
     bars += f'<text x="{x}" y="{BTOP-10}" text-anchor="end" class="bhead">{lab}</text>'
 for i, c in enumerate(data["chains"]):
     y = BTOP + i * BRH
@@ -285,12 +286,20 @@ for i, c in enumerate(data["chains"]):
     tot = c["own"] + c["fr"]
     for x, v, cls in zip(NX, (tot, c["own"], c["fr"]), ("btot", "bval", "bval")):
         bars += f'<text x="{x}" y="{y+BRH/2+5}" text-anchor="end" class="{cls}">{v if v else "–"}</text>'
+    if SHOWD:
+        d = c.get("delta")
+        col = "#008349" if d and d > 0 else "#E3051B" if d and d < 0 else "#8a8a85"
+        bars += f'<text x="{NX[3]}" y="{y+BRH/2+5}" text-anchor="end" class="bval" fill="{col}" style="fill:{col};font-weight:600">{(f"{d:+d}" if d else "±0") if d is not None else "neu"}</text>'
 tot_all = [sum(c["own"] + c["fr"] for c in data["chains"]), sum(c["own"] for c in data["chains"]), sum(c["fr"] for c in data["chains"])]
 y = BTOP + len(data["chains"]) * BRH
 bars += f'<line x1="0" y1="{y+2}" x2="{BW}" y2="{y+2}" stroke="#c9c8c2"/>'
 bars += f'<text x="{BLW-12}" y="{y+20}" text-anchor="end" class="blbl">Gesamt</text>'
 for x, v in zip(NX, tot_all):
     bars += f'<text x="{x}" y="{y+20}" text-anchor="end" class="btot">{f"{v:,}".replace(",", ".")}</text>'
+if SHOWD:
+    dsum = sum(c["delta"] for c in data["chains"] if c.get("delta") is not None)
+    col = "#008349" if dsum > 0 else "#E3051B" if dsum < 0 else "#8a8a85"
+    bars += f'<text x="{NX[3]}" y="{y+20}" text-anchor="end" class="btot" style="fill:{col}">{f"{dsum:+d}" if dsum else "±0"}</text>'
 BH = y + 30
 bars_svg = (f'<svg viewBox="0 0 {BW} {BH}" width="{BW}" height="{BH}" role="img" aria-label="Filialen pro Kette">'
             f'<line x1="{BLW}" y1="{BTOP}" x2="{BLW}" y2="{BTOP + len(data["chains"]) * BRH}" stroke="#c9c8c2"/>{bars}</svg>')
@@ -390,7 +399,7 @@ h2{{color:#006b3b;font-family:'Inter Display',Inter,sans-serif;font-size:24px;fo
 {gantt_svg}<div class="gfoot">{escape(g.get('footnote') or '')}</div></div>
 <div class="row r3">
 <div class="panel"><h2>Geplante Eröffnungen und Gerüchte</h2><div class="h2s">Nicht gezählt – gezählt wird erst, wenn die Kette die Filiale mit Öffnungszeiten listet</div>{pipe}</div>
-<div class="panel"><h2>Filialen pro Kette</h2><div class="h2s">Gezählte Lebensmittelgeschäfte, eigene Filialen und Franchise getrennt</div>
+<div class="panel"><h2>Filialen pro Kette</h2><div class="h2s">Gezählte Lebensmittelgeschäfte, eigene Filialen und Franchise getrennt{(" · Änderung " + escape(data["delta_base"])) if data.get("delta_base") else ""}</div>
 <div class="glegend"><span><span class="sw" style="background:#008349"></span>eigene Filialen</span><span><span class="sw" style="background:#8ccaa6"></span>Franchise (Fr.)</span></div>{bars_svg}</div>
 </div>
 <div class="foot"><div><h3>Offene Punkte</h3><ul>{open_items}</ul></div>

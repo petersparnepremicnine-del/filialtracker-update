@@ -89,7 +89,7 @@ pres.addSection({ title: "Überblick" });
     { text: `Stand ${D.stand} · Zeitraum ${D.period}` },
   ], { placeholder: "body" });
   s.addText("Quelle: Filialliste auf der Website jeder Kette (Filial-Tracker Slowenien)", { x: M, y: H - 0.8, w: 9, h: 0.35, fontSize: 12, color: HEX.tint, margin: 0, isTextBox: true });
-  s.addNotes("Monatsupdate des Filial-Trackers. Zahlen: gezählte Lebensmittelgeschäfte laut Filialliste der Ketten.");
+  s.addNotes(`${D.title} (${D.edition}) des Filial-Trackers. Zahlen: gezählte Lebensmittelgeschäfte laut Filialliste der Ketten.`);
 }
 
 // ---------------------------------------------------------------- 2 KPIs
@@ -240,7 +240,8 @@ pres.addSection({ title: "Markt" });
     showTitle: false, objectName: "Diagramm Filialen pro Kette",
   });
   const tot = D.chains.reduce((a, c) => a + c.own + c.fr, 0);
-  const head = ["Kette", "Gesamt", "Eigene", "Franchise", "Anteil"].map((t, i) => ({ text: t, options: { bold: true, color: HEX.white, fill: { color: HEX.dgreen }, align: i ? "right" : "left" } }));
+  const SHOWD = D.chains.some((c) => c.delta !== null && c.delta !== undefined);
+  const head = ["Kette", "Gesamt", "Eigene", "Franchise", SHOWD ? "Änderung" : "Anteil"].map((t, i) => ({ text: t, options: { bold: true, color: HEX.white, fill: { color: HEX.dgreen }, align: i ? "right" : "left" } }));
   const rows = D.chains.map((c, i) => {
     const fill = { color: i % 2 ? HEX.white : HEX.tint };
     const t = c.own + c.fr;
@@ -249,14 +250,17 @@ pres.addSection({ title: "Markt" });
       { text: fmt(t), options: { fill, align: "right", bold: true } },
       { text: fmt(c.own), options: { fill, align: "right" } },
       { text: c.fr ? fmt(c.fr) : "–", options: { fill, align: "right" } },
-      { text: `${(100 * t / tot).toFixed(1).replace(".", ",")} %`, options: { fill, align: "right", color: HEX.muted } },
+      SHOWD
+        ? { text: c.delta === null || c.delta === undefined ? "neu" : c.delta ? (c.delta > 0 ? "+" : "") + c.delta : "±0", options: { fill, align: "right", bold: true, color: c.delta > 0 ? HEX.green : c.delta < 0 ? HEX.red : HEX.muted } }
+        : { text: `${(100 * t / tot).toFixed(1).replace(".", ",")} %`, options: { fill, align: "right", color: HEX.muted } },
     ];
   });
   const own = D.chains.reduce((a, c) => a + c.own, 0), fr = D.chains.reduce((a, c) => a + c.fr, 0);
-  rows.push(["Gesamt", fmt(tot), fmt(own), fmt(fr), "100 %"].map((t, i) => ({ text: t, options: { bold: true, align: i ? "right" : "left", fill: { color: "DDEEE4" } } })));
+  const dsum = D.chains.reduce((a, c) => a + (c.delta || 0), 0);
+  rows.push(["Gesamt", fmt(tot), fmt(own), fmt(fr), SHOWD ? (dsum ? (dsum > 0 ? "+" : "") + dsum : "±0") : "100 %"].map((t, i) => ({ text: t, options: { bold: true, align: i ? "right" : "left", fill: { color: "DDEEE4" } } })));
   s.addTable([head, ...rows], { x: 7.8, y: 1.6, w: W - M - 7.8, colW: [1.45, 0.78, 0.75, 0.92, 1.033], fontSize: 11, color: HEX.text,
     border: { type: "solid", pt: 0.5, color: HEX.line }, rowH: 0.3, valign: "middle", margin: [0.02, 0.08, 0.02, 0.08] });
-  s.addNotes("Anteil = Anteil an allen gezählten Filialen der erfassten Ketten (nach Anzahl, nicht nach Umsatz oder Fläche).");
+  s.addNotes(SHOWD ? `Änderung = gezählte Filialen ${D.delta_base} (Vergleichsstand der vorigen Ausgabe).` : "Anteil = Anteil an allen gezählten Filialen der erfassten Ketten (nach Anzahl, nicht nach Umsatz oder Fläche).");
 }
 
 // ---------------------------------------------------------------- 8 Verkaufsfläche

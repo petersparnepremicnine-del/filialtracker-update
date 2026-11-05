@@ -3,6 +3,12 @@
 
 Usage:
   python make_data.py sheet_dump.json <run-date YYYY-MM-DD> state.json out.json [--final]
+  python make_data.py sheet_dump.json <run-date> state.json out.json --report quarter|year|season
+    Reports (agreed 5.11.2026) combine monthly editions; they never write state.json:
+      quarter = the 3 monthly editions of the quarter before the run month (run in Jan/Apr/Jul/Oct)
+      year    = the 12 monthly editions of the calendar year before the run (run in January)
+      season  = September–August, the 12 editions up to the run in September
+    Comparison base = per-chain counts of the edition just before the window (none yet -> first survey).
 
 sheet_dump.json: the run's workbook Filialtracker_<date>.xlsx (same tabs as the Google Sheet), or
   {"overview": [...], "changes": [...], "pipeline": [...], "reno": [...], "kand": [...]}
@@ -143,6 +149,8 @@ def load_xlsx(path):
 def main():
     dump_p, run_s, state_p, out_p = sys.argv[1:5]
     final = "--final" in sys.argv
+    report = sys.argv[sys.argv.index("--report") + 1] if "--report" in sys.argv else None
+    if report: final = False
     run = date.fromisoformat(run_s)
     dump = load_xlsx(dump_p) if dump_p.endswith(".xlsx") else json.load(open(dump_p, encoding="utf-8"))
     state = json.load(open(state_p, encoding="utf-8")) if os.path.exists(state_p) else {"editions": []}
@@ -158,6 +166,19 @@ def main():
     else:
         p_start = date.fromisoformat(FIRST_PERIOD_START)
     p_end = run
+    base = prev if not cur else next((e for e in reversed(eds) if e["edition"] < ed_key), None)  # comparison base
+    if report:
+        def mkey(k, back):  # edition key `back` months before k
+            y, m = int(k[:4]), int(k[5:]); m -= back
+            while m <= 0: m += 12; y -= 1
+            return f"{y}-{m:02d}"
+        n = 3 if report == "quarter" else 12
+        keys = [mkey(ed_key, i) for i in range(n - 1, -1, -1)]
+        win = [e for e in eds if e["edition"] in keys]
+        p_start = date.fromisoformat(win[0]["period_start"]) if win else date.fromisoformat(FIRST_PERIOD_START)
+        base = next((e for e in eds if e["edition"] == mkey(ed_key, n)), None)
+        cur = win[0] if win else cur   # pipeline entries known at the start of the window
+        prev = base
 
     def in_period(d):
         return d is not None and p_start <= d <= p_end
@@ -205,6 +226,7 @@ def main():
     rn = table(dump["reno"], 2)
     win_start = date(p_end.year, p_end.month, 1) - timedelta(days=1)
     win_start = date(win_start.year, win_start.month, 1)              # first day of previous month
+    if report: win_start = date(p_start.year, p_start.month, 1)      # reports: whole window
     nm = date(p_end.year + (p_end.month + 1) // 13, (p_end.month % 12) + 1, 1)
     win_end = date(nm.year + (nm.month + 1) // 13, (nm.month % 12) + 1, 1) - timedelta(days=1)  # end of next month
     gantt, reno_running, reno_planned, reno_done_vague = [], 0, 0, []
@@ -417,7 +439,13 @@ def main():
     prev_total = prev["total"] if prev and not cur else (cur.get("prev_total") if cur else None)
     if prev_total is None and prev:
         prev_total = prev["total"]
-    delta = f" · {total - prev_total:+d} ggü. Vormonat" if prev_total is not None else ""
+    if report: prev_total = base["total"] if base else None
+    VS = {"quarter": "Vorquartal", "year": "Vorjahr", "season": "Vorjahr (Sep–Aug)"}.get(report, "Vormonat")
+    delta = f" · {total - prev_total:+d} ggü. {VS}" if prev_total is not None else ""
+    bch = (base or {}).get("chains") or {}
+    for c in chains:
+        c["delta"] = (c["own"] + c["fr"] - bch[c["name"]]) if c["name"] in bch else None
+    delta_base = f"seit {dmy(date.fromisoformat(base['period_end']), True)}" if bch else ""
     n_open, n_re = len(ev["open"]), len(ev["reopen"])
     kpis = [
         {"label": "Gezählte Filialen", "value": f"{total:,}".replace(",", "."), "sub": f"{own} eigene · {fr} Franchise{delta}", "accent": "neutral"},
@@ -431,7 +459,9 @@ def main():
         kpis[2]["sub"] = f"{chain_note(ev['close'])} · durch Regeländerung erfasst"
 
     first_ed = not prev and not (cur and cur.get("prev_total") is not None)
-    period_txt = f"{dmy(p_start)}–{dmy(p_end, True)}" + (" (erste Ausgabe – ab nächstem Monat Vergleich zum Vormonat)" if first_ed else "")
+    period_txt = f"{dmy(p_start, bool(report))}–{dmy(p_end, True)}" + (" (erste Ausgabe – ab nächstem Monat Vergleich zum Vormonat)" if first_ed and not report else "")
+    if report and not base:
+        period_txt = f"{dmy(p_start, True)}–{dmy(p_end, True)} (Erhebung seit {dmy(date.fromisoformat(FIRST_PERIOD_START), True)} – noch kein Vergleichszeitraum)"
 
     open_items = []
     if addr_open:
@@ -448,9 +478,20 @@ def main():
         open_items.append("Weitere Änderungen im Tab „Änderungen“: " + ", ".join(c["head"] for c in dropped))
     open_items = open_items[:5]
 
+    last = run - timedelta(days=1)  # reports describe the period that just ended
+    if report == "quarter":
+        title, edition = "Quartalsbericht Lebensmittelhandel Slowenien", f"Q{(last.month - 1) // 3 + 1} {last.year}"
+    elif report == "year":
+        title, edition = "Jahresbericht Lebensmittelhandel Slowenien", f"{last.year}"
+    elif report == "season":
+        title, edition = "Jahresbericht Lebensmittelhandel Slowenien (September–August)", f"September {run.year - 1} – August {run.year}"
+    else:
+        title, edition = "Monatsupdate Lebensmittelhandel Slowenien", f"{MONTHS[run.month - 1]} {run.year}"
     out = {
-        "title": "Monatsupdate Lebensmittelhandel Slowenien",
-        "edition": f"{MONTHS[run.month - 1]} {run.year}",
+        "kind": report or "month",
+        "delta_base": delta_base,
+        "title": title,
+        "edition": edition,
         "period": period_txt,
         "stand": dmy(run, True),
         "kpis": kpis,
@@ -468,6 +509,7 @@ def main():
     if final:
         rec = {"edition": ed_key, "period_start": p_start.isoformat(), "period_end": p_end.isoformat(),
                "total": total, "prev_total": prev_total,
+               "chains": {c["name"]: c["own"] + c["fr"] for c in chains},  # per-chain counts: base for later reports
                # pipeline entries known when the edition was first built (later additions in the same month = "neu")
                "pipeline_ids_at_start": (cur or {}).get("pipeline_ids_at_start") or sorted(p["id"] for p in pipe)}
         state["editions"] = [e for e in eds if e["edition"] != ed_key] + [rec]

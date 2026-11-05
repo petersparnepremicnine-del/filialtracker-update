@@ -19,3 +19,10 @@ cp monatsupdate.png "archiv/$ED.png"; cp monatsupdate.pdf "archiv/$ED.pdf"; cp m
 python3 tools/make_data.py "$WB" "$RUN" tools/state.json "$TMP/data.json" --final >/dev/null
 tools/publish_workbook.sh "$WB"
 echo "fertig: monatsupdate.png/.pdf/.pptx, archiv/$ED.*, Branch daten"
+# Quartals- und Jahresberichte (5.11.2026): automatisch im passenden Monat; FORCE_REPORT=quarter|year|season zum Testen
+M=$((10#${RUN:5:2}))
+KINDS="${FORCE_REPORT:-}"
+if [ -z "$KINDS" ]; then
+  case "$M" in 1) KINDS="quarter year";; 4|7|10) KINDS="quarter";; 9) KINDS="season";; esac
+fi
+for K in $KINDS; do tools/report.sh "$WB" "$RUN" "$K"; done

@@ -9,6 +9,13 @@ Wird nach jedem Monatslauf automatisch neu erstellt.
 - PDF (Druck, 2 Seiten A4 quer): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/monatsupdate.pdf
 - PowerPoint (Kurzpräsentation, gleiche Daten): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/monatsupdate.pptx
 - Arbeitsmappe (alle Tabs, Stand des letzten Laufs): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/daten/Filialtracker_Slowenien.xlsx
+
+Quartals- und Jahresberichte (gleicher Aufbau, längerer Zeitraum, mit Veränderung je Kette gegenüber dem Vorzeitraum;
+erste Ausgaben: Quartal und Kalenderjahr am 1.1.2027, September–August am 1.9.2027 – vorher sind diese Links leer):
+- Quartalsbericht (1. Januar, April, Juli, Oktober): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/quartalsbericht.png · .pdf · .pptx
+- Jahresbericht Kalenderjahr (1. Januar): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/jahresbericht.png · .pdf · .pptx
+- Jahresbericht September–August (1. September): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/jahresbericht_sep-aug.png · .pdf · .pptx
+- Archiv: archiv/<JJJJ>-Q<n>.*, archiv/<JJJJ>-Jahr.*, archiv/<JJJJ>-<JJJJ>-Sep-Aug.*
   (Branch `daten`, enthält immer nur die neueste Version)
 
 Frühere Ausgaben: Ordner `archiv/` (`JJJJ-MM.png` / `.pdf`).
