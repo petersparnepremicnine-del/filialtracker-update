@@ -19,6 +19,8 @@ cp monatsupdate.png "archiv/$ED.png"; cp monatsupdate.pdf "archiv/$ED.pdf"; cp m
 python3 tools/make_data.py "$WB" "$RUN" tools/state.json "$TMP/data.json" --final >/dev/null
 tools/publish_workbook.sh "$WB"
 echo "fertig: monatsupdate.png/.pdf/.pptx, archiv/$ED.*, Branch daten"
+# berichte.json (6.11.2026): sagt dem Power-Automate-Flow, welche Berichte in DIESEM Lauf neu gebaut wurden
+python3 -c "import json,sys;json.dump({'run':sys.argv[1],'monat':sys.argv[1][:7],'quartal':None,'jahr':None,'sep_aug':None},open('berichte.json','w'),ensure_ascii=False,indent=1)" "$RUN"
 # Quartals- und Jahresberichte (5.11.2026): automatisch im passenden Monat; FORCE_REPORT=quarter|year|season zum Testen
 M=$((10#${RUN:5:2}))
 KINDS="${FORCE_REPORT:-}"

@@ -15,6 +15,8 @@ erste Ausgaben: Quartal und Kalenderjahr am 1.1.2027, September–August am 1.9.
 - Quartalsbericht (1. Januar, April, Juli, Oktober): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/quartalsbericht.png · .pdf · .pptx
 - Jahresbericht Kalenderjahr (1. Januar): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/jahresbericht.png · .pdf · .pptx
 - Jahresbericht September–August (1. September): https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/jahresbericht_sep-aug.png · .pdf · .pptx
+- Welche Berichte im letzten Lauf neu gebaut wurden: https://raw.githubusercontent.com/petersparnepremicnine-del/filialtracker-update/main/berichte.json
+  (Felder run, monat, quartal, jahr, sep_aug – ein Feld ist nur im Monat seines Berichts gefüllt, sonst null; für den E-Mail-Versand im Power-Automate-Flow)
 - Archiv: archiv/<JJJJ>-Q<n>.*, archiv/<JJJJ>-Jahr.*, archiv/<JJJJ>-<JJJJ>-Sep-Aug.*
   (Branch `daten`, enthält immer nur die neueste Version)
 

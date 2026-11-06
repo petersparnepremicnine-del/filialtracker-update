@@ -23,4 +23,6 @@ node tools/render_map.js "$TMP/r.html" "$TMP/map.png"
 APPLY="$(find /root/.claude/skills /mnt/skills -path '*pptx/scripts/apply_theme.js' 2>/dev/null | head -1 || true)"
 PPTX_SKILL_DIR="${APPLY%/scripts/apply_theme.js}" node tools/build_pptx.js "$TMP/data.json" "$TMP/map.png" "$OUT.pptx"
 mkdir -p archiv; for e in png pdf pptx; do cp "$OUT.$e" "archiv/$ARC.$e"; done
+# in berichte.json eintragen (von update.sh im selben Lauf angelegt)
+python3 -c "import json,sys;f='berichte.json';d=json.load(open(f));d[{'quarter':'quartal','year':'jahr','season':'sep_aug'}[sys.argv[1]]]=sys.argv[2];json.dump(d,open(f,'w'),ensure_ascii=False,indent=1)" "$KIND" "$ARC"
 echo "fertig: $OUT.png/.pdf/.pptx, archiv/$ARC.*"
