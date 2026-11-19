@@ -32,6 +32,7 @@ MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August"
           "Oktober", "November", "Dezember"]
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIRST_PERIOD_START = "2026-10-23"  # first survey of the tracker
+DELIVERY_DAY = 3  # the user's Power Automate flow fetches the edition on the 3rd
 
 
 def dmy(d, year=False):
@@ -105,6 +106,8 @@ def classify(text):
         return "seasonal"
     if re.search(r"Kettenwechsel|Entscheidung Adressabgleich: gehört zu|Wechsel bestätigt", t):
         return "switch"
+    if re.search(r"Franchise-Status geändert", t):
+        return "switch"  # own store <-> franchise = new operator (agreed 19.11.2026)
     if re.search(r"Erwartete Eröffnung|Neu gelistet \(noch ohne", t):
         return "expected"
     if re.search(r"Franchisenehmer|Franchise", t) and not re.search(r"Kette aufgenommen", t):
@@ -183,6 +186,12 @@ def main():
     def in_period(d):
         return d is not None and p_start <= d <= p_end
 
+    # Events already delivered: the user's flow fetches the edition on DELIVERY_DAY. A rebuild of the same edition
+    # after that day shows only change-log events since then (agreed 19.11.2026: do not repeat reported items).
+    ev_start = p_start
+    if not report and cur and run >= date(run.year, run.month, DELIVERY_DAY) > p_start:
+        ev_start = date(run.year, run.month, DELIVERY_DAY)
+
     # ------------------------------------------------------------ overview
     ov = dump["overview"]
     hdr_i = next(i for i, r in enumerate(ov) if r and r[0] == "Kette")
@@ -211,7 +220,7 @@ def main():
     ev = {k: [] for k in ["open", "reopen", "close", "seasonal", "switch", "expected", "franchise", "tracker"]}
     for r in ch:
         d, _ = pdate(r.get("Lauf"))
-        if not in_period(d):
+        if not in_period(d) or d < ev_start:
             continue
         typ = classify(r.get("Änderung", ""))
         if not typ:
@@ -305,7 +314,8 @@ def main():
 
     # ------------------------------------------------------------ candidates
     kd = table(dump["kand"], 2)
-    cand_new = [k for k in kd if in_period(pdate(k.get("Gefunden am"))[0])]
+    cand_new = [k for k in kd if in_period(pdate(k.get("Gefunden am"))[0]) and pdate(k.get("Gefunden am"))[0] >= ev_start
+                and k.get("Status") not in ("Abgelehnt",)]
     cand_open = [k for k in kd if k.get("Status") in ("Offen", "Zu prüfen") and not k.get("Entscheidung")]
 
     # ------------------------------------------------------------ cards
@@ -365,6 +375,9 @@ def main():
             m2 = re.search(r"gehört zu (\S+)", r.get("Änderung", ""))
             if m:
                 return m[1]
+            m3 = re.search(r"Franchise-Status geändert: „(\w)“ → „(\w)“", r.get("Änderung", ""))
+            if m3:
+                return f"{r.get('Kette')}: " + ("eigene Filiale → Franchise" if m3[2] == "Y" else "Franchise → eigene Filiale")
             if m2:
                 others = [c.strip() for c in r.get("Kette", "").split("/") if c.strip() and c.strip() != m2[1]]
                 return f"{others[0]} → {m2[1]}" if others else "jetzt " + m2[1]
@@ -460,6 +473,8 @@ def main():
 
     first_ed = not prev and not (cur and cur.get("prev_total") is not None)
     period_txt = f"{dmy(p_start, bool(report))}–{dmy(p_end, True)}" + (" (erste Ausgabe – ab nächstem Monat Vergleich zum Vormonat)" if first_ed and not report else "")
+    if ev_start > p_start:
+        period_txt = f"{dmy(p_start, bool(report))}–{dmy(p_end, True)} · Änderungen seit {dmy(ev_start, True)} (frühere: Ausgabe vom {dmy(ev_start, True)})"
     if report and not base:
         period_txt = f"{dmy(p_start, True)}–{dmy(p_end, True)} (Erhebung seit {dmy(date.fromisoformat(FIRST_PERIOD_START), True)} – noch kein Vergleichszeitraum)"
 
